@@ -1,67 +1,89 @@
+import { useEffect, useState } from 'react';
 import LikeButton from '../LikeButton/LikeButton';
 import RatingBadge from '../RatingBadge/RatingBadge';
 import './MovieDetails.css';
+import { Link, useParams } from 'react-router-dom';
+import Loader from '../Loader/Loader';
 
 function MovieDetails() {
-  return (
-    <article className="movie-details">
-      <button type="button" className="movie-details__back">
-        ← Ко всем фильмам
-      </button>
+  const [film, setFilm] = useState(undefined)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setIsError] = useState(null)
 
-      <div className="movie-details__layout">
-        <div className="movie-details__poster-col">
-          <img
-            className="movie-details__poster"
-            src="https://m.media-amazon.com/images/M/MV5BNzY3OWQ5NDktNWQ2OC00ZjdlLThkMmItMDhhNDk3NTFiZGU4XkEyXkFqcGc@._V1_QL75_UX380_CR0,0,380,562_.jpg"
-            alt="Joker"
-          />
-        </div>
+  const { id } = useParams()
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setIsLoading(true)
+        const res = await fetch(`https://www.omdbapi.com/?apikey=505480d7&i=${id}`)
+        const data = await res.json()
 
-        <div className="movie-details__main">
-          <div className="movie-details__heading">
-            <div>
-              <h1 className="movie-details__title">Joker</h1>
-              <p className="movie-details__meta">2019 · R · 122 min</p>
-            </div>
-            <LikeButton />
+        if (data.Response === "False") {
+          throw new Error()
+        }
+
+        setFilm(data)
+      } catch (error) {
+        console.error(error)
+        setIsError(error.message ?? "Что-то пошло не так")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    load()
+  }, [])
+  if (isLoading) return <Loader />
+  if (!isLoading && error) return <p>{error}</p>
+  if (film)
+    return (
+      <article className="movie-details">
+        <Link to={-1} type="button" className="movie-details__back">
+          ← Ко всем фильмам
+        </Link>
+
+        <div className="movie-details__layout">
+          <div className="movie-details__poster-col">
+            <img
+              className="movie-details__poster"
+              src={film.Poster}
+              alt={film.Title}
+            />
           </div>
 
-          <p className="movie-details__genre">Crime, Drama, Thriller</p>
-
-          <p className="movie-details__plot">
-            Arthur Fleck, a party clown and a failed stand-up comedian, leads an
-            impoverished life with his ailing mother. However, when society
-            shuns him and brands him as a freak, he decides to embrace the life
-            of chaos in Gotham City.
-          </p>
-
-          <div className="movie-details__ratings">
-            <RatingBadge />
-            <div className="rating-badge">
-              <span className="rating-badge__value">68%</span>
-              <span className="rating-badge__source">Rotten Tomatoes</span>
+          <div className="movie-details__main">
+            <div className="movie-details__heading">
+              <div>
+                <h1 className="movie-details__title">{film.Title}</h1>
+                <p className="movie-details__meta">{film.Year} · {film.Rated} · {film.Runtime}</p>
+              </div>
+              <LikeButton />
             </div>
-            <div className="rating-badge">
-              <span className="rating-badge__value">59/100</span>
-              <span className="rating-badge__source">Metacritic</span>
+
+            <p className="movie-details__genre">{film.Genre}</p>
+
+            <p className="movie-details__plot">{film.Plot}</p>
+
+            <div className="movie-details__ratings">
+              {film.Ratings.map((el, i) => (
+                <RatingBadge rating={el} key={i}/>
+              ))}
+
             </div>
+
+            <dl className="movie-details__facts">
+              <div className="movie-details__fact"><dt>Режиссёр</dt><dd>{film.Director}</dd></div>
+              <div className="movie-details__fact"><dt>Сценарий</dt><dd>{film.Writer}</dd></div>
+              <div className="movie-details__fact"><dt>В ролях</dt><dd>{film.Actors}</dd></div>
+              <div className="movie-details__fact"><dt>Дата выхода</dt><dd>{film.Released}</dd></div>
+              <div className="movie-details__fact"><dt>Язык</dt><dd>{film.Language}</dd></div>
+              <div className="movie-details__fact"><dt>Страна</dt><dd>{film.Country}</dd></div>
+              <div className="movie-details__fact"><dt>Награды</dt><dd>{film.Awards}</dd></div>
+              <div className="movie-details__fact"><dt>Сборы</dt><dd>{film.BoxOffice}</dd></div>
+            </dl>
           </div>
-
-          <dl className="movie-details__facts">
-            <div className="movie-details__fact"><dt>Режиссёр</dt><dd>Todd Phillips</dd></div>
-            <div className="movie-details__fact"><dt>Сценарий</dt><dd>Todd Phillips, Scott Silver, Bob Kane</dd></div>
-            <div className="movie-details__fact"><dt>В ролях</dt><dd>Joaquin Phoenix, Robert De Niro, Zazie Beetz</dd></div>
-            <div className="movie-details__fact"><dt>Дата выхода</dt><dd>04 Oct 2019</dd></div>
-            <div className="movie-details__fact"><dt>Язык</dt><dd>English, German</dd></div>
-            <div className="movie-details__fact"><dt>Страна</dt><dd>United States, Canada, Australia</dd></div>
-            <div className="movie-details__fact"><dt>Награды</dt><dd>Won 2 Oscars. 120 wins &amp; 247 nominations total</dd></div>
-            <div className="movie-details__fact"><dt>Сборы</dt><dd>$335,477,657</dd></div>
-          </dl>
         </div>
-      </div>
-    </article>
-  );
+      </article>
+    );
 }
 
 export default MovieDetails;
